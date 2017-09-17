@@ -1,6 +1,7 @@
 import cv2
 from scipy.ndimage import zoom
 import numpy as np
+import smile_model as model
 
 def detect_face(frame):
     cascPath = "/Users/sathish/anaconda/pkgs/opencv3-3.1.0-py35_0/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml"
@@ -30,7 +31,8 @@ def extract_face_features(grays, detected_face, offset_coefficients):
     new_extracted_face = np.array(new_extracted_face, dtype=np.uint8)
     return new_extracted_face
 
-
+model.init()
+model.loadModel()
 cap = cv2.VideoCapture(0)
 
 while True:
@@ -52,17 +54,17 @@ while True:
             # extract features
             processed_extracted_face = extract_face_features(gray, face, (0.075, 0.05))  # (0.075, 0.05) (0.03, 0.05)
 
-            # predict smile
-            # prediction_result = predict_face_is_smiling(extracted_face)
+            # predict smile, adding dummy shape to the processed face
+            prediction_result = model.predict([processed_extracted_face.reshape(processed_extracted_face.shape + (1,))])
 
             # draw extracted face in the top right corner
             frame[face_index * 64: (face_index + 1) * 112, -93:-1, :] = cv2.cvtColor(processed_extracted_face, cv2.COLOR_GRAY2RGB)
 
             # annotate main image with a label
-            # if prediction_result == 1:
-            #     cv2.putText(frame, "SMILING", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 2, 155, 10)
-            # else:
-            #     cv2.putText(frame, "not smiling", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 2, 155, 10)
+            if prediction_result == 0:
+                cv2.putText(frame, "SMILING", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 2, 155, 10)
+            else:
+                cv2.putText(frame, "not smiling", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 2, 155, 10)
 
             # increment counter
             face_index += 1
